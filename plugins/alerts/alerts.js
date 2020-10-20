@@ -13,6 +13,7 @@ var subCount = 0;
 const FOLLOW = 5003;
 const SUBS = 5001;
 const JOINED = 5004;
+const RAID = 5008;
 const SPELL = 5;
 
 function write2File(fileName, data) {
@@ -20,6 +21,20 @@ function write2File(fileName, data) {
     data = data.toString();
   }
   fs.writeFileSync(path.join(Bot.root, 'labels', fileName), data, (err) => {
+    if (err) {
+      Bot.log(Bot.translate("plugins.alerts.error_writing", {
+        fileName: fileName,
+        error: err
+      }));
+    }
+  });
+}
+
+function append2File(fileName, data) {
+  if (typeof (data) !== "string") {
+    data = data.toString();
+  }
+  fs.appendFileSync(path.join(Bot.root, 'labels', fileName), data + "\n", (err) => {
     if (err) {
       Bot.log(Bot.translate("plugins.alerts.error_writing", {
         fileName: fileName,
@@ -69,18 +84,19 @@ module.exports = {
   author: "Made by Krammy",
   license: "Apache-2.0",
   permissions: ['creator'], // This is for Permissisons depending on the Platform.
-  event: [FOLLOW, SUBS, JOINED, SPELL], // Type Event
+  event: [FOLLOW, SUBS, JOINED, SPELL, RAID], // Type Event
   command: 'alerts', // This is the Command that is typed into Chat!
   cooldown: 10, // this is Set in Seconds, how long between the next usage of this command.
   execute(client, data) {
     Bot.log("Triggering");
-
+    
     if ((data.chatType === FOLLOW ||
       (data.args !== undefined && data.args[0] === "follow" && settings.test))
       && settings.alerts.follow.active) {
       Bot.log("Following");
       ++followCount;
       write2File("latest-follow.txt", data.user);
+      append2File("latest-followers.txt", data.user)
       write2File("follow-count.txt", followCount);
       var scene = settings.alerts.follow.scene;
       var source = settings.alerts.follow.source;
@@ -111,6 +127,22 @@ module.exports = {
       obsToggle(scene, source, delay);
       slobsToggle(source, delay);
       https("sub", data.user, settings.alerts.sub.httpMessage);
+    }
+    else if ((data.chatType === RAID ||
+      (data.args !== undefined && data.args[0] === "raid" && settings.test)) &&
+      settings.alerts.raid.active) {
+      write2File("latest-raid.txt", data.user);
+      var scene = settings.alerts.raid.scene;
+      var source = settings.alerts.raid.source;
+      var delay = settings.alerts.raid.delay;
+      var message = settings.alerts.raid.message;
+      var template = Handlebars.compile(message);
+      client.sendMessage(template({
+        user: data.user,
+      }));
+      obsToggle(scene, source, delay);
+      slobsToggle(source, delay);
+      https("raid", data.user, settings.alerts.raid.httpMessage);
     }
     else if ((data.chatType === JOINED ||
       (data.args !== undefined && data.args[0] === "joined" && settings.test)) &&
