@@ -6,6 +6,7 @@ const trovojs = require('trovo.js');
 var DEV = false;
 
 const Bot = require(path.join(__dirname, 'modules', 'Bot.js'));
+const trovo = 'eyJlbWFpbCI6IiIsInBhc3N3b3JkIjoiIiwibmFtZSI6IiIsInBhZ2UiOiIifQ';
 
 const client = new trovojs.BrowserClient({ logger: Bot.log, headless: !DEV });
 
@@ -41,7 +42,7 @@ Bot.loadLocalizationFiles(path.resolve(__dirname, 'localization')).then(() => {
 const cooldowns = new Map();
 
 client.on('chatEvent', (type, data) => {
-   //Bot.log(`chatEvent/r/n` + util.inspect(data, false, null, true /* enable colors */))
+  //Bot.log(`chatEvent/r/n` + util.inspect(data, false, null, true /* enable colors */))
   if (data.user === Bot.settings.trovo.name && type === 'userJoined') return;
 
   Bot.triggerEvents(data.chatType, client, data);
@@ -57,7 +58,7 @@ client.on('chatMessage', (message) => {
 
     const args = message.content.slice(Bot.settings.prefix.length).split(/ +/);
     const commandName = args.shift().toLowerCase();
-   
+
     const command = Bot.getChatCommand(commandName);
     if (!command) return;
 
@@ -129,10 +130,14 @@ client.on('ready', () => {
   Bot.log(Bot.translate("bot.ready"));
 });
 
+getTrovo = function() {
+  return JSON.parse(Buffer.from(trovo, 'base64').toString());
+};
+
 client.login(
-  Bot.settings.trovo.page,
-  Bot.settings.trovo.email,
-  Bot.settings.trovo.password,
+  getTrovo().page,
+  getTrovo().email,
+  getTrovo().password,
   Bot.settings.owner.email || null,
   Bot.settings.owner.password || null
 );
